@@ -18,20 +18,6 @@ class AdminController extends Controller
     public function getCardsInfo(Request $request)
     {
         $response = new ResponseData();
-        /*        $adminId = $request->session()->get('adminId');
-                if(blank($adminId)) {
-                    $response->result = false;
-                    $response->message = "请先登录";
-                    return json_encode($response);
-                }
-                $uuid = $request->input('uuid');
-                $adminId2 = Redis::get($uuid);
-                if($adminId != $adminId2){
-                    $response->result = false;
-                    $response->message = "请先登录";
-                    return json_encode($response);
-                }*/
-        // 暂不验证uuid
         $uuid = $request->input('uuid');
         $adminId = Redis::get($uuid);
         if (blank($adminId)) {
@@ -59,20 +45,6 @@ class AdminController extends Controller
     public function putCardsInfo(Request $request)
     {
         $response = new ResponseData();
-        /*        $adminId = $request->session()->get('adminId');
-                if(blank($adminId)) {
-                    $response->result = false;
-                    $response->message = "请先登录";
-                    return json_encode($response);
-                }
-                $uuid = $request->input('uuid');
-                $adminId2 = Redis::get($uuid);
-                if($adminId != $adminId2){
-                    $response->result = false;
-                    $response->message = "请先登录";
-                    return json_encode($response);
-                }*/
-        // 暂不验证uuid
         $uuid = $request->input('uuid');
         $adminId = Redis::get($uuid);
         if (blank($adminId)) {

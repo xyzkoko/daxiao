@@ -19,17 +19,9 @@ class GameController extends Controller
     {
         set_time_limit(180);
         $idKey = "GAME_ID";       // 当局ID
-        $gameId = Redis::get($idKey);
-        if (blank($gameId)) {
-            $num = 1;
-        } else {
-            $pieces = explode("|", $gameId);
-            if ($pieces[1] == 480 || $pieces[0] != date('Ymd')) {
-                $num = 1;
-            } else {
-                $num = $pieces[1] + 1;
-            }
-        }
+        $hour = date('H');
+        $minute = date('i');
+        $num = intval(($hour * 60 + $minute) / 3) + 1;
         $num = sprintf("%03d", $num);       // 补齐3位
         $gameId = date('Ymd') . '|' . $num;
         Redis::set($idKey, $gameId);      // 更新当局ID
@@ -41,7 +33,6 @@ class GameController extends Controller
         $gameInfo['startTime'] = UserController::getMillisecond();
         $gameInfo['status'] = 0;
         $gameInfo['dice'] = array(rand(1, 6), rand(1, 6), rand(1, 6));
-        //$gameInfo['position'] = $this->getPosition($gameInfo['position']);     // 随机获取玩家头像
         Redis::set($gameKey, json_encode($gameInfo));            // 更新Redis
         $betsKey = "BETS_INFO";       // 下注信息
         Redis::del($betsKey);
@@ -107,135 +98,6 @@ class GameController extends Controller
             $closeTime += 180;
         }
         echo 'success';
-    }
-
-    /*把牌按照3|2排序*/
-    public static function sortCards($cards)
-    {
-        $sortCards = array();
-        foreach ($cards as $card) {
-            $count = count($card);
-            for ($i = 0; $i < $count; $i++) {
-                $point1 = $card[$i] % 100 > 10 ? 10 : $card[$i];
-                for ($j = $i + 1; $j < $count; $j++) {
-                    $point2 = $card[$j] % 100 > 10 ? 10 : $card[$j];
-                    for ($k = $j + 1; $k < $count; $k++) {
-                        $point3 = $card[$k] % 100 > 10 ? 10 : $card[$k];
-                        if (($point1 + $point2 + $point3) % 10 == 0) {
-                            $sortCard = array($card[$i], $card[$j], $card[$k]);
-                            $sortCards[] = array_merge($sortCard, array_except($card, [$i, $j, $k]));
-                            break 3;
-                        }
-                    }
-                }
-                if ($i == $count - 1) {
-                    $sortCards[] = $card;
-                }
-            }
-        }
-        return json_encode($sortCards);
-    }
-
-    /*算点*/
-    public static function getPoint($card)
-    {
-        $count = count($card);
-        $cardPoint = array();
-        for ($i = 0; $i < $count; $i++) {
-            $cardPoint[] = $card[$i] % 100 > 10 ? 10 : $card[$i];
-        }
-        for ($i = 0; $i < $count; $i++) {
-            for ($j = $i + 1; $j < $count; $j++) {
-                for ($k = $j + 1; $k < $count; $k++) {
-                    if (($cardPoint[$i] + $cardPoint[$j] + $cardPoint[$k]) % 10 == 0) {
-                        $cardPoint = array_except($cardPoint, [$i, $j, $k]);
-                        return array_sum($cardPoint) % 10 == 0 ? 10 : array_sum($cardPoint) % 10;
-                    }
-                }
-            }
-        }
-        return 0;
-    }
-
-    /*结算*/
-    private function result($gameInfo)
-    {
-        $betsKey = "BETS_INFO";       // 玩家下注信息
-        $allBets = Redis::hgetall($betsKey);
-        $bankerPoint = $gameInfo['position'][0]['point'];     // 庄家点数
-        $bankerResult = 0;      // 庄家输赢
-        $pot = 0;       // 总下注数
-        foreach ($allBets as $userId => $value) {
-            $result = 0;        // 玩家输赢
-            $value = json_decode($value, true);
-            $double = $value["double"];
-            $betnum = 0;      // 玩家下注数
-            for ($i = 1; $i <= 9; $i++) {
-                $playerPoint = $gameInfo['position'][$i]['point'];
-                if ($value[$i] == 0) {
-                    continue;
-                }
-                $betnum += $value[$i];
-                // 比大小
-                if ($playerPoint > $bankerPoint) {      // win
-                    $result += $this->getResult($playerPoint, $bankerPoint, $double, $value[$i], true);
-                } elseif ($playerPoint < $bankerPoint) {        // lose
-                    $result -= $this->getResult($bankerPoint, $playerPoint, $double, $value[$i], false);
-                }
-            }
-            // 统计游戏信息
-            $bankerResult -= $result;
-            $pot += $betnum;
-            // 保存玩家下注信息
-            $value["result"] = $result;
-            Redis::hset($betsKey, $userId, json_encode($value));
-            $userbet = new UserBet();
-            $userbet->user_id = $userId;
-            $userbet->game_id = $gameInfo['gameId'];
-            $userbet->bets = json_encode($value);
-            $userbet->betnum = $betnum;
-            $userbet->result = $result;
-            $userbet->save();
-            // 更新玩家信息
-            $userKey = "USER_INFO";       // 玩家信息
-            $userInfo = json_decode(Redis::get($userKey . "|" . $userId), true);
-            $userInfo["chips"] += $betnum + $result;        // 返还筹码
-            Redis::set($userKey . "|" . $userId, json_encode($userInfo));
-        }
-        $response['bankerResult'] = $bankerResult;
-        $response['pot'] = $pot;
-        return $response;
-    }
-
-    /*算分*/
-    private function getResult($bigPoint, $smallPoint, $double, $bets, $half)
-    {
-        if ($double == 1) {
-            if ($bigPoint == 8) {
-                $bets = $bets * 2;
-            }
-            if ($bigPoint == 9) {
-                $bets = $bets * 3;
-            }
-            if ($bigPoint == 10) {
-                $bets = $bets * 4;
-            }
-        }
-        if ($half && $bigPoint == 5 && ($smallPoint == 4 || $smallPoint == 0)) {      // 特殊点数庄家赔付一半
-            $bets = $bets / 2;
-        }
-        return $bets;
-    }
-
-    /*随机获取玩家头像信息*/
-    private function getPosition($position)
-    {
-        $userInfo = UserInfo::where('headimgurl', '<>', 'headimgurl')->inRandomOrder()->take(9)->get()->toArray();
-        for ($i = 1; $i < count($position); $i++) {
-            $position[$i]['nickname'] = $userInfo[$i - 1]["nickname"];
-            $position[$i]['headimgurl'] = $userInfo[$i - 1]["headimgurl"];
-        }
-        return $position;
     }
 
     /*获取当前牌局信息*/
