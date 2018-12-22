@@ -67,11 +67,7 @@ class GameController extends Controller
         for ($i = 1; $i <= 480; $i++) {
             $gameCards = new GameCards;
             $gameCards->id = $data . '|' . sprintf("%03d", $i);       // 补齐3位;
-            $carda = $constant::CARDINDEXS;      // 获取总牌组
-            shuffle($carda);     // 随机
-            $carda = array_chunk($carda, 5);       // 分割
-            $carda = array_slice($carda, 0, 10);        // 取前十个
-            $gameCards->cards = $this->sortCards($carda);
+            $gameCards->cards = array(rand(1, 6), rand(1, 6), rand(1, 6));
             $gameCards->close_time = $closeTime * 1000;
             $gameCards->save();
             $closeTime += 180;
@@ -88,11 +84,7 @@ class GameController extends Controller
         for ($i = 1; $i <= 480; $i++) {
             $gameCards = new GameCards;
             $gameCards->id = $data . '|' . sprintf("%03d", $i);       // 补齐3位;
-            $cards = $constant::CARDINDEXS;      // 获取总牌组
-            shuffle($cards);     // 随机
-            $cards = array_chunk($cards, 5);       // 分割
-            $cards = array_slice($cards, 0, 10);        // 取前十个
-            $gameCards->cards = $this->sortCards($cards);
+            $gameCards->cards = array(rand(1, 6), rand(1, 6), rand(1, 6));
             $gameCards->close_time = $closeTime * 1000;
             $gameCards->save();
             $closeTime += 180;
