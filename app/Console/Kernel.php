@@ -33,10 +33,6 @@ class Kernel extends ConsoleKernel
             $gameController = new GameController();
             $gameController->startGame();
         })->cron('*/3 * * * *');        // 开始游戏
-        $schedule->call(function () {
-            $gameController = new GameController();
-            $gameController->changeIcon();
-        })->cron('* * * * *');        // 更改座位头像
     }
 
     /**
