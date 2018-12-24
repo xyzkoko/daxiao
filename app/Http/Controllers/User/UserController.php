@@ -25,12 +25,6 @@ class UserController extends Controller
             return json_encode($response);
         }
         $gameInfo["nowTime"] = $this->getMillisecond();
-        $iconKey = "ICON_INFO";       // 在线用户信息
-        $iconInfo = json_decode(Redis::get($iconKey), true);
-        for ($i = 1; $i < count($gameInfo["position"]); $i++) {
-            $gameInfo["position"][$i]["headimgurl"] = $iconInfo[$i]["headimgurl"];
-            $gameInfo["position"][$i]["nickname"] = $iconInfo[$i]["nickname"];
-        }
         $response->data = $gameInfo;
         return json_encode($response);
     }
