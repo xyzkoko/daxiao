@@ -29,14 +29,6 @@ class AdminController extends Controller
         $startDate = $request->input('startDate');       // 查询开始日期|001
         $endDate = $request->input('endDate');       // 查询结束日期|480
         $gameCards = GameCards::whereBetween('id', [$startDate, $endDate])->get()->toArray();
-        if (count($gameCards) != 0) {
-            for ($i = 0; $i < count($gameCards); $i++) {
-                $cards = $gameCards[$i]['cards'] = json_decode($gameCards[$i]['cards'], true);
-                for ($j = 0; $j < count($cards); $j++) {
-                    $gameCards[$i]['points'][] = GameController::getPoint($cards[$j]);
-                }
-            }
-        }
         $response->data = $gameCards;
         return json_encode($response);
     }
@@ -60,23 +52,17 @@ class AdminController extends Controller
             $response->message = "该局已结算!";
             return json_encode($response);;
         }
-        $cards = $request->input('cards');
-        $cards = json_decode($cards, true);
-        for ($i = 0; $i < 10; $i++) {       // 判断数量
-            if (count($cards[$i]) != 5) {
+        $dice = $request->input('dice');
+        $dice = json_decode($dice, true);
+        for ($i = 0; $i < count($dice); $i++) {       // 判断数量
+            if ($dice[$i] < 1 || $dice[$i] > 6) {
                 $response->result = false;
                 $response->message = "参数错误!";
                 return json_encode($response);
             }
         }
-        $allCards = array_collapse($cards);     // 判断重复
-        if (count($allCards) != count(array_unique($allCards))) {
-            $response->result = false;
-            $response->message = "参数错误!";
-            return json_encode($response);
-        }
         // 保存数据库
-        $gameCards->cards = GameController::sortCards($cards);
+        $gameCards->cards = json_encode($dice);
         $gameCards->save();
         $response->data = $gameCards;
         return json_encode($response);
