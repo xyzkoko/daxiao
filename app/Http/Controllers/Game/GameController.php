@@ -32,7 +32,6 @@ class GameController extends Controller
         $gameInfo['gameId'] = $gameId;
         $gameInfo['startTime'] = UserController::getMillisecond();
         $gameInfo['status'] = 0;
-        $gameInfo['dice'] = array(rand(1, 6), rand(1, 6), rand(1, 6));
         Redis::set($gameKey, json_encode($gameInfo));            // 更新Redis
         $betsKey = "BETS_INFO";       // 下注信息
         Redis::del($betsKey);
@@ -43,11 +42,7 @@ class GameController extends Controller
         sleep(40);      // 等待
         // 结算阶段
         $gameCards = GameCards::find($gameId);
-        $cards = json_decode($gameCards["cards"], true);
-        for ($i = 0; $i < count($gameInfo['position']); $i++) {
-            $gameInfo['position'][$i]['cards'] = json_encode($cards[$i]);
-            $gameInfo['position'][$i]['point'] = $this::getPoint($cards[$i]);
-        }
+        $gameInfo['dice'] = $gameCards["cards"];
         $gameInfo['status'] = 2;
         Redis::set($gameKey, json_encode($gameInfo));      // 更新Redis
         $result = $this->result($gameInfo);     // 总收入
@@ -61,13 +56,12 @@ class GameController extends Controller
     /*每天早上生成次日的牌组*/
     public function addGameList()
     {
-        $constant = new Constant();
         $data = date("Ymd", strtotime("+1 day"));
         $closeTime = strtotime($data) + 105;
         for ($i = 1; $i <= 480; $i++) {
             $gameCards = new GameCards;
             $gameCards->id = $data . '|' . sprintf("%03d", $i);       // 补齐3位;
-            $gameCards->cards = array(rand(1, 6), rand(1, 6), rand(1, 6));
+            $gameCards->cards = json_encode(array(rand(1, 6), rand(1, 6), rand(1, 6)));
             $gameCards->close_time = $closeTime * 1000;
             $gameCards->save();
             $closeTime += 180;
@@ -78,13 +72,12 @@ class GameController extends Controller
     /*生成今天的牌组*/
     public function addTodayGameList()
     {
-        $constant = new Constant();
         $data = date("Ymd");
         $closeTime = strtotime($data) + 105;
         for ($i = 1; $i <= 480; $i++) {
             $gameCards = new GameCards;
             $gameCards->id = $data . '|' . sprintf("%03d", $i);       // 补齐3位;
-            $gameCards->cards = array(rand(1, 6), rand(1, 6), rand(1, 6));
+            $gameCards->cards = json_encode(array(rand(1, 6), rand(1, 6), rand(1, 6)));
             $gameCards->close_time = $closeTime * 1000;
             $gameCards->save();
             $closeTime += 180;
@@ -109,10 +102,7 @@ class GameController extends Controller
         $num = sprintf("%03d", $num);       // 补齐3位
         $gameId = $date . '|' . $num;
         $gameCards = GameCards::find($gameId)->toArray();
-        $cards = $data['cards'] = json_decode($gameCards['cards'], true);
-        for ($j = 0; $j < count($cards); $j++) {
-            $data['points'][] = GameController::getPoint($cards[$j]);
-        }
+        $data['dice'] = $gameCards['dice'];
         $data['gameId'] = $gameId;
         $data['nextGameId'] = $nextGameId;
         $response->data = $data;
