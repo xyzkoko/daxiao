@@ -102,7 +102,7 @@ class GameController extends Controller
         $num = sprintf("%03d", $num);       // 补齐3位
         $gameId = $date . '|' . $num;
         $gameCards = GameCards::find($gameId)->toArray();
-        $data['dice'] = $gameCards['dice'];
+        $data['dice'] = $gameCards['cards'];
         $data['gameId'] = $gameId;
         $data['nextGameId'] = $nextGameId;
         $response->data = $data;
