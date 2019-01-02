@@ -102,7 +102,8 @@ class GameController extends Controller
         $num = sprintf("%03d", $num);       // 补齐3位
         $gameId = $date . '|' . $num;
         $gameCards = GameCards::find($gameId)->toArray();
-        var_dump($gameCards);
+        $dice = json_decode($gameCards['cards'],true);
+        var_dump($dice);
         $gameCards['cards'][] = array_sum($gameCards['cards']);
         $data['dice'] = implode(",",$gameCards['cards']);
         $data['gameId'] = $gameId;
