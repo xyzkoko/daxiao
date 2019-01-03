@@ -24,8 +24,7 @@ class UserController extends Controller
             $response->message = "牌局错误";
             return json_encode($response);
         }
-        var_dump($gameInfo);exit;
-        $gameInfo["dice"] = json_decode($gameInfo["cards"]);
+        $gameInfo["dice"] = json_decode($gameInfo["dice"],true);
         $gameInfo["nowTime"] = $this->getMillisecond();
         $response->data = $gameInfo;
         return json_encode($response);
