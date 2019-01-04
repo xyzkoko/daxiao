@@ -29,6 +29,9 @@ class AdminController extends Controller
         $startDate = $request->input('startDate');       // 查询开始日期|001
         $endDate = $request->input('endDate');       // 查询结束日期|480
         $gameCards = GameCards::whereBetween('id', [$startDate, $endDate])->get()->toArray();
+        for ($i = 0; $i < count($gameCards); $i++) {
+            $gameCards[$i]['cards'] = json_decode($gameCards[$i]['cards'], true);
+        }
         $response->data = $gameCards;
         return json_encode($response);
     }
@@ -52,10 +55,10 @@ class AdminController extends Controller
             $response->message = "该局已结算!";
             return json_encode($response);;
         }
-        $dice = $request->input('dice');
+        $dice = $request->input('cards');
         $dice = json_decode($dice, true);
         for ($i = 0; $i < count($dice); $i++) {       // 判断数量
-            if ($dice[$i] < 1 || $dice[$i] > 6) {
+            if (count($dice) != 3 || $dice[$i] < 1 || $dice[$i] > 6) {
                 $response->result = false;
                 $response->message = "参数错误!";
                 return json_encode($response);
