@@ -42,14 +42,11 @@ class GameController extends Controller
         sleep(40);      // 等待
         // 结算阶段
         $gameCards = GameCards::find($gameId);
+        $gameCards->status = 2;
+        $gameCards->save();
         $gameInfo['dice'] = $gameCards["cards"];
         $gameInfo['status'] = 2;
         Redis::set($gameKey, json_encode($gameInfo));      // 更新Redis
-        $result = $this->result($gameInfo);     // 总收入
-        $gameCards->status = 2;
-        $gameCards->pot = $result['pot'];      // 总下注数
-        $gameCards->result = $result['bankerResult'];        // 庄家输赢
-        $gameCards->save();
         return "success";
     }
 
